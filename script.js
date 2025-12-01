@@ -247,3 +247,95 @@ function compararTextos() {
     });
     $('#diffResult').html('').append(f);
 }
+
+/* ==========================================
+   ENCODERS (UNICODE & HTML)
+   ========================================== */
+
+// 1. Inspetor Instantâneo (ao digitar um caractere)
+$('#charInput').on('input', function() {
+    let char = $(this).val();
+    if (char.length === 0) {
+        $('#outCharUnicode, #outCharHtmlName, #outCharHtmlDec').val('');
+        return;
+    }
+    
+    let code = char.charCodeAt(0);
+    
+    // Unicode Hex (ex: 00E7)
+    let hex = code.toString(16).toUpperCase();
+    while (hex.length < 4) hex = "0" + hex;
+    $('#outCharUnicode').val(hex);
+    
+    // HTML Decimal
+    $('#outCharHtmlDec').val('&#' + code + ';');
+    
+    // HTML Named (Busca no mapa ou retorna vazio se não tiver nome padrão)
+    let named = getHtmlEntityName(char);
+    $('#outCharHtmlName').val(named ? named : '-');
+});
+
+// 2. Conversor em Massa
+function converterTexto(tipo) {
+    let input = $('#encoderInput').val();
+    let output = '';
+    let onlySpecial = $('#chkOnlySpecial').is(':checked');
+
+    if (tipo === 'ascii') {
+        // Decodificar (Input tem códigos -> Output texto limpo)
+        // Decodifica HTML
+        let txt = document.createElement("textarea");
+        txt.innerHTML = input;
+        output = txt.value;
+        // Decodifica Unicode (\uXXXX)
+        output = output.replace(/\\u([\d\w]{4})/gi, function (match, grp) {
+            return String.fromCharCode(parseInt(grp, 16));
+        });
+    } 
+    else if (tipo === 'js') {
+        // Para Unicode JS
+        for (let i = 0; i < input.length; i++) {
+            let code = input.charCodeAt(i);
+            // Se "apenas especiais" estiver marcado, ignora ASCII simples (0-127)
+            if (onlySpecial && code < 128) {
+                output += input.charAt(i);
+            } else {
+                let hex = code.toString(16).toUpperCase();
+                while (hex.length < 4) hex = "0" + hex;
+                output += '\\u' + hex;
+            }
+        }
+    } 
+    else if (tipo === 'html') {
+        // Para HTML Entities
+        for (let i = 0; i < input.length; i++) {
+            let char = input.charAt(i);
+            let code = input.charCodeAt(i);
+            
+            if (onlySpecial && code < 128) {
+                output += char;
+            } else {
+                // Tenta achar o nomeado (&ccedil;), se não tiver, vai numérico (&#231;)
+                let named = getHtmlEntityName(char);
+                if (named) output += named;
+                else output += '&#' + code + ';';
+            }
+        }
+    }
+
+    $('#encoderOutput').val(output);
+}
+
+// Mapa auxiliar para garantir entidades nomeadas (As mais usadas em PT-BR)
+function getHtmlEntityName(char) {
+    const map = {
+        'á':'&aacute;', 'Á':'&Aacute;', 'à':'&agrave;', 'À':'&Agrave;', 'â':'&acirc;', 'Â':'&Acirc;', 'ã':'&atilde;', 'Ã':'&Atilde;', 'ä':'&auml;', 'Ä':'&Auml;',
+        'é':'&eacute;', 'É':'&Eacute;', 'è':'&egrave;', 'È':'&Egrave;', 'ê':'&ecirc;', 'Ê':'&Ecirc;', 'ë':'&euml;', 'Ë':'&Euml;',
+        'í':'&iacute;', 'Í':'&Iacute;', 'ì':'&igrave;', 'Ì':'&Igrave;', 'î':'&icirc;', 'Î':'&Icirc;', 'ï':'&iuml;', 'Ï':'&Iuml;',
+        'ó':'&oacute;', 'Ó':'&Oacute;', 'ò':'&ograve;', 'Ò':'&Ograve;', 'ô':'&ocirc;', 'Ô':'&Ocirc;', 'õ':'&otilde;', 'Õ':'&Otilde;', 'ö':'&ouml;', 'Ö':'&Ouml;',
+        'ú':'&uacute;', 'Ú':'&Uacute;', 'ù':'&ugrave;', 'Ù':'&Ugrave;', 'û':'&ucirc;', 'Û':'&Ucirc;', 'ü':'&uuml;', 'Ü':'&Uuml;',
+        'ç':'&ccedil;', 'Ç':'&Ccedil;', 'ñ':'&ntilde;', 'Ñ':'&Ntilde;',
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;'
+    };
+    return map[char] || null;
+}

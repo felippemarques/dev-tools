@@ -24,6 +24,7 @@
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-security">Segurança & Regex</a>
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-format">Formatadores (Beautify)</a>
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-diff">Comparador de Texto</a>
+                    <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-encoder">Encoders (Unicode/HTML)</a>
                 </div>
             </div>
 
@@ -165,6 +166,83 @@
                                 <hr>
                                 <h5>Resultado:</h5>
                                 <div id="diffResult" class="p-3 border rounded bg-white font-monospace"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="tab-encoder" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-12 mb-4">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-indigo text-white" style="background-color: #6610f2;">
+                                        <i class="fas fa-search"></i> Inspetor de Caractere
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <p class="text-muted">Digite um caractere abaixo para ver seus códigos:</p>
+                                        <input type="text" class="form-control form-control-lg text-center fw-bold mb-3" 
+                                            id="charInput" maxlength="1" style="font-size: 2rem; width: 80px; margin: 0 auto;" 
+                                            placeholder="ç">
+                                        
+                                        <div class="row mt-3">
+                                            <div class="col-md-4">
+                                                <label class="fw-bold">JS Unicode</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">\u</span>
+                                                    <input type="text" class="form-control text-center" id="outCharUnicode" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="fw-bold">HTML Entity (Nome)</label>
+                                                <input type="text" class="form-control text-center" id="outCharHtmlName" readonly>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="fw-bold">HTML Decimal</label>
+                                                <input type="text" class="form-control text-center" id="outCharHtmlDec" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-dark text-white">
+                                        <i class="fas fa-exchange-alt"></i> Conversor de Texto em Massa
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <label class="form-label">Texto Original</label>
+                                                <textarea class="form-control" id="encoderInput" rows="6" placeholder="Digite o texto aqui... (ex: Ação e Reação)"></textarea>
+                                            </div>
+                                            
+                                            <div class="col-md-2 d-flex flex-column justify-content-center align-items-center">
+                                                <div class="d-grid gap-2 w-100 my-3">
+                                                    <button class="btn btn-outline-primary" onclick="converterTexto('js')">
+                                                        Para JS (\u) <i class="fas fa-arrow-right"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-success" onclick="converterTexto('html')">
+                                                        Para HTML (&amp;) <i class="fas fa-arrow-right"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary" onclick="converterTexto('ascii')">
+                                                        <i class="fas fa-arrow-left"></i> Decodificar
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-5">
+                                                <label class="form-label">Resultado Convertido</label>
+                                                <textarea class="form-control font-monospace" id="encoderOutput" rows="6" readonly></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="chkOnlySpecial" checked>
+                                            <label class="form-check-label" for="chkOnlySpecial">
+                                                Converter apenas caracteres especiais (manter letras A-Z normais)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
