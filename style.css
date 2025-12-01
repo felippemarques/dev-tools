@@ -1,0 +1,22 @@
+body {
+    padding-bottom: 50px;
+}
+.card {
+    border: none;
+    margin-bottom: 20px;
+}
+/* Textareas com fonte monoespaçada para código */
+textarea.font-monospace {
+    font-size: 0.9rem;
+    white-space: pre; 
+    overflow-wrap: normal;
+    overflow-x: scroll;
+}
+/* Estilo para o diff */
+#diffResult {
+    min-height: 100px;
+    line-height: 1.8;
+}
+.navbar-brand i {
+    margin-right: 10px;
+}
