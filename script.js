@@ -1,5 +1,5 @@
 /* ==========================================
-   UTILITÁRIOS GERAIS
+   1. UTILITÁRIOS GERAIS
    ========================================== */
 function showMsg(elementId, text, type) {
     const color = type === 'success' ? 'text-success' : 'text-danger';
@@ -12,7 +12,7 @@ function random(n) { return Math.round(Math.random() * n); }
 function mod(dividendo, divisor) { return Math.round(dividendo - (Math.floor(dividendo / divisor) * divisor)); }
 
 /* ==========================================
-   DOCUMENTOS (CPF, CNPJ, NFe)
+   2. DOCUMENTOS (CPF, CNPJ, NFe)
    ========================================== */
 // --- CPF ---
 function gerarCPF(comPontuacao) {
@@ -67,7 +67,7 @@ function validarNFeInput() {
 }
 
 /* ==========================================
-   SEGURANÇA
+   3. SEGURANÇA
    ========================================== */
 function gerarSenha() {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
@@ -88,7 +88,48 @@ function testarRegex() {
 }
 
 /* ==========================================
-   FORMATADORES & DIFF
+   4. ENCODERS (UNICODE & HTML)
+   ========================================== */
+$('#charInput').on('input', function() {
+    let char = $(this).val();
+    if (char.length === 0) { $('#outCharUnicode, #outCharHtmlName, #outCharHtmlDec').val(''); return; }
+    let code = char.charCodeAt(0);
+    let hex = code.toString(16).toUpperCase(); while (hex.length < 4) hex = "0" + hex;
+    $('#outCharUnicode').val(hex);
+    $('#outCharHtmlDec').val('&#' + code + ';');
+    let named = getHtmlEntityName(char);
+    $('#outCharHtmlName').val(named ? named : '-');
+});
+
+function converterTexto(tipo) {
+    let input = $('#encoderInput').val();
+    let output = '';
+    let onlySpecial = $('#chkOnlySpecial').is(':checked');
+    if (tipo === 'ascii') {
+        let txt = document.createElement("textarea"); txt.innerHTML = input; output = txt.value;
+        output = output.replace(/\\u([\d\w]{4})/gi, (m, g) => String.fromCharCode(parseInt(g, 16)));
+    } else if (tipo === 'js') {
+        for (let i = 0; i < input.length; i++) {
+            let code = input.charCodeAt(i);
+            if (onlySpecial && code < 128) output += input.charAt(i);
+            else { let hex = code.toString(16).toUpperCase(); while (hex.length < 4) hex = "0" + hex; output += '\\u' + hex; }
+        }
+    } else if (tipo === 'html') {
+        for (let i = 0; i < input.length; i++) {
+            let char = input.charAt(i), code = input.charCodeAt(i);
+            if (onlySpecial && code < 128) output += char;
+            else { let named = getHtmlEntityName(char); output += named ? named : '&#' + code + ';'; }
+        }
+    }
+    $('#encoderOutput').val(output);
+}
+function getHtmlEntityName(char) {
+    const map = {'á':'&aacute;', 'Á':'&Aacute;', 'à':'&agrave;', 'À':'&Agrave;', 'â':'&acirc;', 'Â':'&Acirc;', 'ã':'&atilde;', 'Ã':'&Atilde;', 'ä':'&auml;', 'Ä':'&Auml;', 'é':'&eacute;', 'É':'&Eacute;', 'è':'&egrave;', 'È':'&Egrave;', 'ê':'&ecirc;', 'Ê':'&Ecirc;', 'ë':'&euml;', 'Ë':'&Euml;', 'í':'&iacute;', 'Í':'&Iacute;', 'ì':'&igrave;', 'Ì':'&Igrave;', 'î':'&icirc;', 'Î':'&Icirc;', 'ï':'&iuml;', 'Ï':'&Iuml;', 'ó':'&oacute;', 'Ó':'&Oacute;', 'ò':'&ograve;', 'Ò':'&Ograve;', 'ô':'&ocirc;', 'Ô':'&Ocirc;', 'õ':'&otilde;', 'Õ':'&Otilde;', 'ö':'&ouml;', 'Ö':'&Ouml;', 'ú':'&uacute;', 'Ú':'&Uacute;', 'ù':'&ugrave;', 'Ù':'&Ugrave;', 'û':'&ucirc;', 'Û':'&Ucirc;', 'ü':'&uuml;', 'Ü':'&Uuml;', 'ç':'&ccedil;', 'Ç':'&Ccedil;', 'ñ':'&ntilde;', 'Ñ':'&Ntilde;', '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;'};
+    return map[char] || null;
+}
+
+/* ==========================================
+   5. FORMATADORES & DIFF
    ========================================== */
 function formatarCodigo(tipo) {
     let input = $('#inputFormat').val();
@@ -96,246 +137,160 @@ function formatarCodigo(tipo) {
 
     if (tipo === 'json') {
         try { $('#outputFormat').val(JSON.stringify(JSON.parse(input), null, 4)); } 
-        catch (e) { $('#outputFormat').val("JSON Inválido"); }
+        catch (e) { $('#outputFormat').val("JSON Inválido: " + e.message); }
     } else if (tipo === 'html') {
-        $('#outputFormat').val(html_beautify(input, { indent_size: 4 }));
+        $('#outputFormat').val(html_beautify(input, { indent_size: 4, indent_inner_html: true }));
     } else if (tipo === 'xml') {
         $('#outputFormat').val(formatXml(input));
     } else if (tipo === 'sql') {
         $('#outputFormat').val(beautifyCustomSQL(input));
-    }
-}
-
-// === FORMATADOR SQL CUSTOMIZADO (DBA / RED-GATE STYLE) ===
-
-function splitSafe(str, delimiter) {
-    let result = [], current = '', parenLevel = 0;
-    for (let i = 0; i < str.length; i++) {
-        let char = str[i];
-        if (char === '(') parenLevel++;
-        if (char === ')') parenLevel--;
-        if (char === delimiter && parenLevel === 0) { result.push(current); current = ''; } 
-        else { current += char; }
-    }
-    result.push(current);
-    return result;
-}
-
-function beautifyCustomSQL(sql) {
-    // 1. Limpeza básica
-    sql = sql.replace(/\s+/g, ' ').trim();
-    
-    let formatted = sql;
-
-    // --- A. ESTRUTURA MACRO: Forçar quebras nos blocos principais ---
-    // Isso garante que WHERE nunca fique na mesma linha que ON ou JOIN
-    const keywords = ["FROM", "WHERE", "ORDER BY", "GROUP BY", "HAVING", "INSERT INTO", "UPDATE", "DELETE", "Begin Try", "End Try", "Begin Catch", "End Catch"];
-    keywords.forEach(kw => {
-        let re = new RegExp(`\\s+${kw}\\s+`, "gi");
-        formatted = formatted.replace(re, `\n${kw} `);
-    });
-
-    // --- B. TRATAR SELECT (Colunas) ---
-    formatted = formatted.replace(/SELECT\s+(.+?)(?=\s+(?:FROM|INTO|WHERE|GROUP|ORDER|HAVING|UNION|$))/gi, function(match, columns) {
-        let cols = splitSafe(columns, ',');
-        cols = cols.map(c => c.trim()).filter(c => c);
-        
-        let hasEquals = cols.every(c => c.includes('=') && !c.includes('=='));
-
-        if (hasEquals && cols.length > 1) {
-             let maxLen = 0;
-             let parsed = cols.map(c => {
-                 let parts = c.split('=');
-                 let name = parts[0].trim();
-                 let val = parts.slice(1).join('=').trim();
-                 if (name.length > maxLen) maxLen = name.length;
-                 return {name, val};
-             });
-             return "SELECT " + parsed.map((p, i) => {
-                 let padding = " ".repeat(maxLen - p.name.length);
-                 let prefix = i === 0 ? "" : "       ";
-                 return `${prefix}${p.name}${padding} = ${p.val}`;
-             }).join(",\n");
-        } else {
-            return "SELECT " + cols.map((c, i) => {
-                let prefix = i === 0 ? "" : "       ";
-                return `${prefix}${c}`;
-            }).join(",\n");
+    } else if (tipo === 'asp') {
+        // Chamada Segura para ASP
+        try {
+            $('#outputFormat').val(beautifyASP(input));
+        } catch(e) {
+            console.error(e);
+            $('#outputFormat').val("Erro ao formatar ASP: " + e.message + "\n(Verifique o console F12)");
         }
-    });
-
-    // --- C. TRATAR JOINS ---
-    // A tabela anterior permanece na linha. O join fica nela. A próxima tabela cai.
-    formatted = formatted.replace(/\s+(INNER|LEFT|RIGHT|FULL|CROSS|OUTER)?\s*JOIN\s+/gi, function(match) {
-        return " " + match.trim() + "\n      "; 
-    });
-
-    // --- D. TRATAR ON ---
-    formatted = formatted.replace(/\s+ON\s+/gi, "\n            ON ");
-
-    // --- E. TRATAR WHERE (Internos) ---
-    // O regex captura o bloco WHERE inteiro até o próximo comando principal
-    // E então substitui os AND/OR dentro dele
-    formatted = formatted.replace(/(WHERE\s+)([\s\S]+?)(?=$|\n(?:ORDER|GROUP|HAVING|OPTION|UNION))/gi, function(match, whereTag, content) {
-        
-        // Substitui AND/OR por quebra de linha + indentação (6 espaços)
-        let newContent = content.replace(/\s+AND\s+/gi, "\n      AND ");
-        newContent = newContent.replace(/\s+OR\s+/gi, "\n      OR ");
-        
-        return whereTag + newContent;
-    });
-
-    // --- F. TRATAR DECLARE e EXEC ---
-    formatted = formatted.replace(/DECLARE\s+([^;]+?)(?=\s+(?:SELECT|SET|FROM|GO|$))/gi, function(match, content) {
-        let vars = splitSafe(content, ',');
-        vars = vars.map(v => v.trim());
-        let isTyped = vars.every(v => v.trim().includes(' '));
-        if(!isTyped) return "DECLARE " + vars.join(",\n        ");
-
-        let maxLen = 0;
-        let parsed = vars.map(v => {
-            let parts = v.split(/\s+/);
-            let name = parts[0];
-            let type = parts.slice(1).join(' ');
-            if (name.length > maxLen) maxLen = name.length;
-            return { name, type };
-        });
-        return "\nDECLARE " + parsed.map((v, i) => {
-            let padding = " ".repeat(maxLen - v.name.length);
-            let prefix = i === 0 ? "" : "        ";
-            return `${prefix}${v.name}${padding} ${v.type.toUpperCase()}`;
-        }).join(",\n");
-    });
-
-    formatted = formatted.replace(/EXEC\s+(\w+)\s+([^;]+)/gi, function(match, proc, args) {
-        let params = splitSafe(args, ',');
-        params = params.map(p => p.trim());
-        let prefixBase = `\nEXEC ${proc} `; 
-        let indentSize = prefixBase.length - 1; 
-        let indentString = " ".repeat(indentSize);
-        return prefixBase + params.map((p, i) => {
-            if (i === 0) return p;
-            return `${indentString}${p}`;
-        }).join(",\n");
-    });
-
-    // Remove linhas em branco extras no início e fim
-    return formatted.replace(/^\s+|\s+$/g, "");
+    }
 }
 
+// === FORMATADOR ASP CLÁSSICO (VERSÃO SEGURA SEM COMENTÁRIOS) ===
+function beautifyASP(source) {
+    if (!source) return "";
+    let aspBlocks = [];
+    
+    // 1. Substitui blocos ASP por tokens seguros (___ASP_TOKEN_0___)
+    let protectedSource = source.replace(/<%(=?)([\s\S]*?)%>/g, function(match, isResponse, code) {
+        let formattedVBS = formatVBScript(code || ""); // Garante que não é null
+        if (isResponse) formattedVBS = formattedVBS.replace(/\r?\n|\r/g, ' ').trim();
+        
+        aspBlocks.push({ full: match, isResponse: isResponse, code: formattedVBS });
+        return "___ASP_TOKEN_" + (aspBlocks.length - 1) + "___"; 
+    });
+
+    // 2. Formata o HTML
+    let formattedHTML = "";
+    if (typeof html_beautify !== 'undefined') {
+        formattedHTML = html_beautify(protectedSource, { 
+            indent_size: 4, 
+            preserve_newlines: true,
+            indent_inner_html: true 
+        });
+    } else {
+        formattedHTML = protectedSource; // Fallback se a lib falhar
+    }
+
+    // 3. Restaura os blocos
+    let finalCode = formattedHTML.replace(/___ASP_TOKEN_(\d+)___/g, function(match, index) {
+        let block = aspBlocks[parseInt(index)];
+        if (!block) return match;
+        
+        let prefix = block.isResponse ? '<%=' : '<%';
+        if (block.isResponse) return `${prefix} ${block.code} %>`;
+        else return `${prefix}\n${block.code}\n%>`;
+    });
+    
+    return finalCode;
+}
+
+function formatVBScript(vbs) {
+    if (!vbs) return "";
+    const keywords = ["If", "Then", "Else", "ElseIf", "End If", "For", "To", "Next", "Each", "In", "Step", "Select Case", "End Select", "Case", "Do", "Loop", "While", "Until", "Wend", "Function", "End Function", "Sub", "End Sub", "Dim", "Set", "New", "Nothing", "Empty", "Null", "True", "False", "Option Explicit", "On Error Resume Next", "Response.Write", "Response.Redirect", "Response.End", "Request.Form", "Request.QueryString", "Server.CreateObject", "CInt", "CLng", "CStr", "CDbl", "CDate", "IsArray", "IsDate", "IsEmpty", "IsNull", "IsNumeric", "Trim", "LTrim", "RTrim", "Len", "Mid", "Left", "Right", "Replace", "Split", "Join", "UCase", "LCase"];
+    let lines = vbs.split(/\r?\n/);
+    let formattedLines = [];
+    let indentLevel = 0;
+    const indentChar = "    ";
+    
+    const blockStart = /^(If\s+.*Then(?!.*\bEnd\s+If)|For\b|Select Case|Do\b|While\b|Sub\b|Function\b|Class\b)/i;
+    const blockEnd = /^(End\s+(If|Select|Sub|Function|Class)|Next\b|Loop\b|Wend\b)/i;
+    const blockMid = /^(Else|ElseIf\b|Case\b)/i;
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line) continue;
+        
+        // Uppercase keywords
+        keywords.forEach(kw => { let regex = new RegExp(`\\b${kw}\\b`, 'gi'); line = line.replace(regex, kw); });
+        
+        // Indentação
+        if (blockEnd.test(line)) indentLevel--;
+        if (indentLevel < 0) indentLevel = 0; // Proteção contra negativo
+        
+        if (blockMid.test(line)) {
+            formattedLines.push(indentChar.repeat(Math.max(0, indentLevel - 1)) + line);
+        } else {
+            formattedLines.push(indentChar.repeat(indentLevel) + line);
+        }
+        
+        if (blockStart.test(line)) indentLevel++;
+    }
+    return formattedLines.join("\n");
+}
+
+/* ==========================================
+   FORMATADOR SQL (DBA) & XML
+   ========================================== */
 function formatXml(xml) {
     let formatted = '', pad = 0;
     xml = xml.replace(/(>)(<)(\/*)/g, '$1\r\n$2$3');
     xml.split('\r\n').forEach(node => {
         let indent = 0;
-        if (node.match(/.+<\/\w[^>]*>$/)) indent = 0;
-        else if (node.match(/^<\/\w/)) { if (pad != 0) pad -= 1; }
-        else if (node.match(/^<\w[^>]*[^\/]>.*$/)) indent = 1;
-        let padding = ''; for (let i = 0; i < pad; i++) padding += '    ';
-        formatted += padding + node + '\r\n';
-        pad += indent;
+        if (node.match(/.+<\/\w[^>]*>$/)) indent = 0; else if (node.match(/^<\/\w/)) { if (pad != 0) pad -= 1; } else if (node.match(/^<\w[^>]*[^\/]>.*$/)) indent = 1;
+        let padding = ''; for (let i = 0; i < pad; i++) padding += '    '; formatted += padding + node + '\r\n'; pad += indent;
+    }); return formatted;
+}
+
+function splitSafe(str, delimiter) {
+    let result = [], current = '', parenLevel = 0;
+    for (let i = 0; i < str.length; i++) {
+        let char = str[i];
+        if (char === '(') parenLevel++; if (char === ')') parenLevel--;
+        if (char === delimiter && parenLevel === 0) { result.push(current); current = ''; } else { current += char; }
+    } result.push(current); return result;
+}
+
+function beautifyCustomSQL(sql) {
+    sql = sql.replace(/\s+/g, ' ').trim();
+    let formatted = sql;
+    const keywords = ["FROM", "WHERE", "ORDER BY", "GROUP BY", "HAVING", "INSERT INTO", "UPDATE", "DELETE", "Begin Try", "End Try", "Begin Catch", "End Catch"];
+    keywords.forEach(kw => { let re = new RegExp(`\\s+${kw}\\s+`, "gi"); formatted = formatted.replace(re, `\n${kw} `); });
+
+    formatted = formatted.replace(/SELECT\s+(.+?)(?=\s+(?:FROM|INTO|WHERE|GROUP|ORDER|HAVING|UNION|$))/gi, function(match, columns) {
+        let cols = splitSafe(columns, ','); cols = cols.map(c => c.trim()).filter(c => c);
+        let hasEquals = cols.every(c => c.includes('=') && !c.includes('=='));
+        if (hasEquals && cols.length > 1) {
+             let maxLen = 0;
+             let parsed = cols.map(c => { let parts = c.split('='); let name = parts[0].trim(); let val = parts.slice(1).join('=').trim(); if (name.length > maxLen) maxLen = name.length; return {name, val}; });
+             return "SELECT " + parsed.map((p, i) => { let padding = " ".repeat(maxLen - p.name.length); let prefix = i === 0 ? "" : "       "; return `${prefix}${p.name}${padding} = ${p.val}`; }).join(",\n");
+        } else { return "SELECT " + cols.map((c, i) => { let prefix = i === 0 ? "" : "       "; return `${prefix}${c}`; }).join(",\n"); }
     });
-    return formatted;
+
+    formatted = formatted.replace(/\s+(INNER|LEFT|RIGHT|FULL|CROSS|OUTER)?\s*JOIN\s+/gi, function(match) { return " " + match.trim() + "\n      "; });
+    formatted = formatted.replace(/\s+ON\s+/gi, "\n            ON ");
+    formatted = formatted.replace(/(WHERE\s+)([\s\S]+?)(?=$|\n(?:ORDER|GROUP|HAVING|OPTION|UNION))/gi, function(match, whereTag, content) {
+        let newContent = content.replace(/\s+AND\s+/gi, "\n      AND "); newContent = newContent.replace(/\s+OR\s+/gi, "\n      OR "); return whereTag + newContent;
+    });
+
+    formatted = formatted.replace(/DECLARE\s+([^;]+?)(?=\s+(?:SELECT|SET|FROM|GO|$))/gi, function(match, content) {
+        let vars = splitSafe(content, ','); vars = vars.map(v => v.trim());
+        let isTyped = vars.every(v => v.trim().includes(' '));
+        if(!isTyped) return "DECLARE " + vars.join(",\n        ");
+        let maxLen = 0; let parsed = vars.map(v => { let parts = v.split(/\s+/); let name = parts[0]; let type = parts.slice(1).join(' '); if (name.length > maxLen) maxLen = name.length; return { name, type }; });
+        return "\nDECLARE " + parsed.map((v, i) => { let padding = " ".repeat(maxLen - v.name.length); let prefix = i === 0 ? "" : "        "; return `${prefix}${v.name}${padding} ${v.type.toUpperCase()}`; }).join(",\n");
+    });
+
+    formatted = formatted.replace(/EXEC\s+(\w+)\s+([^;]+)/gi, function(match, proc, args) {
+        let params = splitSafe(args, ','); params = params.map(p => p.trim());
+        let prefixBase = `\nEXEC ${proc} `; let indentSize = prefixBase.length - 1; let indentString = " ".repeat(indentSize);
+        return prefixBase + params.map((p, i) => { if (i === 0) return p; return `${indentString}${p}`; }).join(",\n");
+    });
+
+    return formatted.replace(/^\s+|\s+$/g, "");
 }
 
 function compararTextos() {
     const d = Diff.diffWords($('#diffOld').val(), $('#diffNew').val()), f = document.createDocumentFragment();
-    d.forEach(p => {
-        const s = document.createElement('span');
-        s.className = p.added ? 'bg-success text-white p-1' : p.removed ? 'bg-danger text-white text-decoration-line-through p-1' : 'text-dark';
-        s.appendChild(document.createTextNode(p.value)); f.appendChild(s);
-    });
+    d.forEach(p => { const s = document.createElement('span'); s.className = p.added ? 'bg-success text-white p-1' : p.removed ? 'bg-danger text-white text-decoration-line-through p-1' : 'text-dark'; s.appendChild(document.createTextNode(p.value)); f.appendChild(s); });
     $('#diffResult').html('').append(f);
-}
-
-/* ==========================================
-   ENCODERS (UNICODE & HTML)
-   ========================================== */
-
-// 1. Inspetor Instantâneo (ao digitar um caractere)
-$('#charInput').on('input', function() {
-    let char = $(this).val();
-    if (char.length === 0) {
-        $('#outCharUnicode, #outCharHtmlName, #outCharHtmlDec').val('');
-        return;
-    }
-    
-    let code = char.charCodeAt(0);
-    
-    // Unicode Hex (ex: 00E7)
-    let hex = code.toString(16).toUpperCase();
-    while (hex.length < 4) hex = "0" + hex;
-    $('#outCharUnicode').val(hex);
-    
-    // HTML Decimal
-    $('#outCharHtmlDec').val('&#' + code + ';');
-    
-    // HTML Named (Busca no mapa ou retorna vazio se não tiver nome padrão)
-    let named = getHtmlEntityName(char);
-    $('#outCharHtmlName').val(named ? named : '-');
-});
-
-// 2. Conversor em Massa
-function converterTexto(tipo) {
-    let input = $('#encoderInput').val();
-    let output = '';
-    let onlySpecial = $('#chkOnlySpecial').is(':checked');
-
-    if (tipo === 'ascii') {
-        // Decodificar (Input tem códigos -> Output texto limpo)
-        // Decodifica HTML
-        let txt = document.createElement("textarea");
-        txt.innerHTML = input;
-        output = txt.value;
-        // Decodifica Unicode (\uXXXX)
-        output = output.replace(/\\u([\d\w]{4})/gi, function (match, grp) {
-            return String.fromCharCode(parseInt(grp, 16));
-        });
-    } 
-    else if (tipo === 'js') {
-        // Para Unicode JS
-        for (let i = 0; i < input.length; i++) {
-            let code = input.charCodeAt(i);
-            // Se "apenas especiais" estiver marcado, ignora ASCII simples (0-127)
-            if (onlySpecial && code < 128) {
-                output += input.charAt(i);
-            } else {
-                let hex = code.toString(16).toUpperCase();
-                while (hex.length < 4) hex = "0" + hex;
-                output += '\\u' + hex;
-            }
-        }
-    } 
-    else if (tipo === 'html') {
-        // Para HTML Entities
-        for (let i = 0; i < input.length; i++) {
-            let char = input.charAt(i);
-            let code = input.charCodeAt(i);
-            
-            if (onlySpecial && code < 128) {
-                output += char;
-            } else {
-                // Tenta achar o nomeado (&ccedil;), se não tiver, vai numérico (&#231;)
-                let named = getHtmlEntityName(char);
-                if (named) output += named;
-                else output += '&#' + code + ';';
-            }
-        }
-    }
-
-    $('#encoderOutput').val(output);
-}
-
-// Mapa auxiliar para garantir entidades nomeadas (As mais usadas em PT-BR)
-function getHtmlEntityName(char) {
-    const map = {
-        'á':'&aacute;', 'Á':'&Aacute;', 'à':'&agrave;', 'À':'&Agrave;', 'â':'&acirc;', 'Â':'&Acirc;', 'ã':'&atilde;', 'Ã':'&Atilde;', 'ä':'&auml;', 'Ä':'&Auml;',
-        'é':'&eacute;', 'É':'&Eacute;', 'è':'&egrave;', 'È':'&Egrave;', 'ê':'&ecirc;', 'Ê':'&Ecirc;', 'ë':'&euml;', 'Ë':'&Euml;',
-        'í':'&iacute;', 'Í':'&Iacute;', 'ì':'&igrave;', 'Ì':'&Igrave;', 'î':'&icirc;', 'Î':'&Icirc;', 'ï':'&iuml;', 'Ï':'&Iuml;',
-        'ó':'&oacute;', 'Ó':'&Oacute;', 'ò':'&ograve;', 'Ò':'&Ograve;', 'ô':'&ocirc;', 'Ô':'&Ocirc;', 'õ':'&otilde;', 'Õ':'&Otilde;', 'ö':'&ouml;', 'Ö':'&Ouml;',
-        'ú':'&uacute;', 'Ú':'&Uacute;', 'ù':'&ugrave;', 'Ù':'&Ugrave;', 'û':'&ucirc;', 'Û':'&Ucirc;', 'ü':'&uuml;', 'Ü':'&Uuml;',
-        'ç':'&ccedil;', 'Ç':'&Ccedil;', 'ñ':'&ntilde;', 'Ñ':'&Ntilde;',
-        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;'
-    };
-    return map[char] || null;
 }
