@@ -1,19 +1,14 @@
-# Usa imagem leve do Nginx
-FROM nginx:alpine
+# Usa a imagem oficial do PHP com Apache (já configurada para Web)
+FROM php:8.2-apache
 
-# Remove a configuração padrão do Nginx
-RUN rm /etc/nginx/conf.d/default.conf
+# Habilita o mod_rewrite do Apache (útil para URLs amigáveis no futuro)
+RUN a2enmod rewrite
 
-# Copia a nossa configuração personalizada (Porta 3000)
-COPY default.conf /etc/nginx/conf.d/
+# Ajusta o Apache para ouvir na porta 3000 (igual à tua config do Coolify)
+RUN sed -i 's/80/3000/g' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
 
-# Copia os arquivos do site
-COPY index.html /usr/share/nginx/html/
-COPY script.js /usr/share/nginx/html/
-COPY style.css /usr/share/nginx/html/
+# Copia os arquivos do projeto para a pasta pública do Apache
+COPY . /var/www/html/
 
-# Expõe a porta 3000 (Informação para o Coolify)
+# Define a porta exposta
 EXPOSE 3000
-
-# Inicia o servidor
-CMD ["nginx", "-g", "daemon off;"]
