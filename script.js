@@ -300,6 +300,22 @@ function compararTextos() {
    ========================================== */
 
 let _supabase;
+$(document).ready(function() {
+    
+    // 1. Iniciar Supabase (Se config.js estiver carregado)
+    // Verifica se a LIB 'supabase' existe e se a URL foi definida
+    if (typeof supabase !== 'undefined' && typeof SUPABASE_URL !== 'undefined') {
+        try {
+            // Cria o cliente usando a biblioteca original e salva na nossa variável _supabase
+            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            verificarSessao();
+        } catch (e) {
+            console.error("Erro ao iniciar Supabase:", e);
+        }
+    } else {
+        console.warn("Supabase não carregado. Verifique o import no index.html e o config.js");
+    }
+});
 
 // --- SUPABASE AUTH FUNCTIONS ---
 async function verificarSessao() {
