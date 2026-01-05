@@ -10,5 +10,4 @@ $dados = [
 ];
 
 echo json_encode($dados, JSON_PRETTY_PRINT);
-echo phpinfo()
 ?>
