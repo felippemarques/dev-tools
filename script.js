@@ -299,13 +299,16 @@ function compararTextos() {
    SUPABASE INTEGRATION (AUTH & DB)
    ========================================== */
 
-   // --- SUPABASE AUTH FUNCTIONS ---
+let _supabase;
+
+// --- SUPABASE AUTH FUNCTIONS ---
 async function verificarSessao() {
-    if(!supabase) return;
-    const { data: { session } } = await supabase.auth.getSession();
+    if(!_supabase) return;
+    const { data: { session } } = await _supabase.auth.getSession();
     atualizarInterfaceAuth(session);
-    supabase.auth.onAuthStateChange((_event, session) => { atualizarInterfaceAuth(session); });
+    _supabase.auth.onAuthStateChange((_event, session) => { atualizarInterfaceAuth(session); });
 }
+
 function atualizarInterfaceAuth(session) {
     if (session) {
         $('#userEmailDisplay').text(session.user.email).show();
@@ -318,28 +321,38 @@ function atualizarInterfaceAuth(session) {
         if ($('#tab-vault').hasClass('active')) $('.list-group-item:first').tab('show');
     }
 }
+
 async function fazerLogin() {
+    if(!_supabase) return showMsg('authMsg', 'Erro Supabase: Cliente não iniciado.', 'error');
     const email = $('#authEmail').val(), password = $('#authPass').val();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
     if (error) showMsg('authMsg', 'Erro: ' + error.message, 'error'); else { $('#modalAuth').modal('hide'); showMsg('authMsg', '', 'success'); }
 }
+
 async function fazerCadastro() {
+    if(!_supabase) return showMsg('authMsg', 'Erro Supabase: Cliente não iniciado.', 'error');
     const email = $('#authEmail').val(), password = $('#authPass').val();
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await _supabase.auth.signUp({ email, password });
     if (error) showMsg('authMsg', 'Erro: ' + error.message, 'error'); else showMsg('authMsg', 'Sucesso! Verifique seu e-mail ou logue.', 'success');
 }
-async function logout() { await supabase.auth.signOut(); }
+
+async function logout() { 
+    if(_supabase) await _supabase.auth.signOut(); 
+}
 
 // --- SUPABASE DB ---
 async function salvarSnippet() {
+    if(!_supabase) return;
     const titulo = $('#snippetTitle').val(), conteudo = $('#snippetContent').val();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await _supabase.auth.getUser();
     if (!titulo || !conteudo || !user) return;
-    const { error } = await supabase.from('meus_snippets').insert({ user_id: user.id, titulo: titulo, conteudo: conteudo });
+    const { error } = await _supabase.from('meus_snippets').insert({ user_id: user.id, titulo: titulo, conteudo: conteudo });
     if (error) alert('Erro ao salvar: ' + error.message); else { $('#snippetTitle').val(''); $('#snippetContent').val(''); carregarSnippets(); }
 }
+
 async function carregarSnippets() {
-    const { data, error } = await supabase.from('meus_snippets').select('*').order('created_at', { ascending: false });
+    if(!_supabase) return;
+    const { data, error } = await _supabase.from('meus_snippets').select('*').order('created_at', { ascending: false });
     if (error) { $('#listaSnippets').html('<div class="text-danger">Erro ao carregar.</div>'); } else {
         if (data.length === 0) { $('#listaSnippets').html('<div class="list-group-item">Nenhum snippet salvo.</div>'); return; }
         let html = '';
@@ -350,8 +363,9 @@ async function carregarSnippets() {
         $('#listaSnippets').html(html);
     }
 }
+
 async function deletarSnippet(id) {
     if(!confirm("Apagar?")) return;
-    const { error } = await supabase.from('meus_snippets').delete().eq('id', id);
+    const { error } = await _supabase.from('meus_snippets').delete().eq('id', id);
     if (!error) carregarSnippets();
 }
