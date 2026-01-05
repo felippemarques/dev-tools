@@ -1,0 +1,12 @@
+# .htaccess
+
+# Força o carregamento do index.html primeiro
+DirectoryIndex index.html index.php
+
+# Bloqueia a listagem de pastas (Segurança)
+Options -Indexes
+
+# Configurações básicas de Rewrite (já preparando para o futuro)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
