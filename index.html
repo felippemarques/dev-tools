@@ -12,7 +12,16 @@
 
     <nav class="navbar navbar-dark bg-dark mb-4">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1"><i class="fas fa-code"></i> DevTools WM10</span>
+            <span class="navbar-brand mb-0 h1"><i class="fas fa-code"></i> DevTools WmM10</span>
+            <div class="d-flex align-items-center">
+                <span id="userEmailDisplay" class="text-white me-3 small" style="display:none;"></span>
+                <button id="btnLogin" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalAuth">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+                <button id="btnLogout" class="btn btn-outline-danger btn-sm" style="display:none;" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -25,6 +34,9 @@
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-format">Formatadores (Beautify)</a>
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-diff">Comparador de Texto</a>
                     <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#tab-encoder">Encoders (Unicode/HTML)</a>
+                    <a class="list-group-item list-group-item-action list-group-item-warning d-none" id="tab-vault-link" data-bs-toggle="list" href="#tab-vault">
+                        <i class="fas fa-lock"></i> Meu Cofre (Privado)
+                    </a>
                 </div>
             </div>
 
@@ -248,6 +260,60 @@
                         </div>
                     </div>
 
+                    <div class="tab-pane fade" id="tab-vault" role="tabpanel">
+                        <div class="card shadow-sm border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <i class="fas fa-save"></i> Meus Snippets Salvos (Nuvem)
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-2 mb-4">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" id="snippetTitle" placeholder="Título (ex: Conexão PHP)">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" id="snippetContent" placeholder="Código ou Texto...">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-dark w-100" onclick="salvarSnippet()">Salvar</button>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <h5>Meus Itens:</h5>
+                                <div id="listaSnippets" class="list-group">
+                                    <div class="text-center text-muted">Carregando...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="modalAuth" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Acesso Restrito</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label>E-mail</label>
+                                        <input type="email" class="form-control" id="authEmail">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label>Senha</label>
+                                        <input type="password" class="form-control" id="authPass">
+                                    </div>
+                                    <div id="authMsg" class="mb-2 text-center"></div>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
+                                        <button class="btn btn-outline-secondary" onclick="fazerCadastro()">Cadastrar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -260,6 +326,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sql-formatter@4.0.2/dist/sql-formatter.min.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

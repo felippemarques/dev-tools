@@ -294,3 +294,148 @@ function compararTextos() {
     d.forEach(p => { const s = document.createElement('span'); s.className = p.added ? 'bg-success text-white p-1' : p.removed ? 'bg-danger text-white text-decoration-line-through p-1' : 'text-dark'; s.appendChild(document.createTextNode(p.value)); f.appendChild(s); });
     $('#diffResult').html('').append(f);
 }
+
+/* ==========================================
+   SUPABASE INTEGRATION (AUTH & DB)
+   ========================================== */
+
+// Inicializa o Cliente (As variáveis vêm do config.js)
+let supabase;
+try {
+    supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (e) {
+    console.error("Erro ao iniciar Supabase. Verifique o config.js");
+}
+
+// Verifica sessão ao carregar a página
+$(document).ready(function() {
+    verificarSessao();
+});
+
+async function verificarSessao() {
+    const { data: { session } } = await supabase.auth.getSession();
+    atualizarInterfaceAuth(session);
+    
+    // Escuta mudanças de estado (Login/Logout em outras abas)
+    supabase.auth.onAuthStateChange((_event, session) => {
+        atualizarInterfaceAuth(session);
+    });
+}
+
+function atualizarInterfaceAuth(session) {
+    if (session) {
+        // Usuário Logado
+        $('#userEmailDisplay').text(session.user.email).show();
+        $('#btnLogin').hide();
+        $('#btnLogout').show();
+        $('#tab-vault-link').removeClass('d-none'); // Mostra a aba
+        carregarSnippets(); // Carrega os dados
+    } else {
+        // Usuário Deslogado
+        $('#userEmailDisplay').hide();
+        $('#btnLogin').show();
+        $('#btnLogout').hide();
+        $('#tab-vault-link').addClass('d-none'); // Esconde a aba
+        // Se estiver na aba restrita, volta para a primeira
+        if ($('#tab-vault').hasClass('active')) {
+            $('.list-group-item:first').tab('show');
+        }
+    }
+}
+
+// --- AÇÕES DE AUTH ---
+
+async function fazerLogin() {
+    const email = $('#authEmail').val();
+    const password = $('#authPass').val();
+    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) showMsg('authMsg', 'Erro: ' + error.message, 'error');
+    else {
+        $('#modalAuth').modal('hide');
+        showMsg('authMsg', '', 'success'); // Limpa msg
+    }
+}
+
+async function fazerCadastro() {
+    const email = $('#authEmail').val();
+    const password = $('#authPass').val();
+    
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    
+    if (error) showMsg('authMsg', 'Erro: ' + error.message, 'error');
+    else showMsg('authMsg', 'Sucesso! Verifique seu e-mail (se configurado) ou faça login.', 'success');
+}
+
+async function logout() {
+    const { error } = await supabase.auth.signOut();
+}
+
+// --- BANCO DE DADOS (CRUD SNIPPETS) ---
+
+async function salvarSnippet() {
+    const titulo = $('#snippetTitle').val();
+    const conteudo = $('#snippetContent').val();
+    
+    // Pega o usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!titulo || !conteudo || !user) return;
+
+    const { error } = await supabase
+        .from('meus_snippets')
+        .insert({ user_id: user.id, titulo: titulo, conteudo: conteudo });
+
+    if (error) alert('Erro ao salvar: ' + error.message);
+    else {
+        $('#snippetTitle').val('');
+        $('#snippetContent').val('');
+        carregarSnippets(); // Recarrega a lista
+    }
+}
+
+async function carregarSnippets() {
+    const { data, error } = await supabase
+        .from('meus_snippets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        $('#listaSnippets').html('<div class="text-danger">Erro ao carregar.</div>');
+    } else {
+        if (data.length === 0) {
+            $('#listaSnippets').html('<div class="list-group-item">Nenhum snippet salvo ainda.</div>');
+            return;
+        }
+
+        let html = '';
+        data.forEach(item => {
+            // Escapar HTML para evitar XSS
+            const tituloSafe = $('<div>').text(item.titulo).html();
+            const conteudoSafe = $('<div>').text(item.conteudo).html();
+            
+            html += `
+                <div class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1 fw-bold">${tituloSafe}</h6>
+                        <small class="text-muted" style="cursor:pointer;" onclick="deletarSnippet(${item.id})"><i class="fas fa-trash text-danger"></i></small>
+                    </div>
+                    <p class="mb-1 font-monospace bg-light p-2 small">${conteudoSafe}</p>
+                </div>
+            `;
+        });
+        $('#listaSnippets').html(html);
+    }
+}
+
+async function deletarSnippet(id) {
+    if(!confirm("Tem certeza que deseja apagar?")) return;
+    
+    const { error } = await supabase
+        .from('meus_snippets')
+        .delete()
+        .eq('id', id);
+        
+    if (!error) carregarSnippets();
+}
